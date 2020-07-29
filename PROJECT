@@ -1,6 +1,10 @@
 domain: ibmcloud.ibm.com
 layout: go.kubebuilder.io/v2
 repo: github.com/johandry/nfs-operator
+resources:
+- group: nfs.storage
+  kind: Nfs
+  version: v1alpha1
 version: 3-alpha
 plugins:
   go.operator-sdk.io/v2-alpha: {}

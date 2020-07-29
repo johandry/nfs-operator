@@ -1,0 +1,7 @@
+apiVersion: nfs.storage.ibmcloud.ibm.com/v1alpha1
+kind: Nfs
+metadata:
+  name: nfs-sample
+spec:
+  # Add fields here
+  foo: bar
