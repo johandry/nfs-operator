@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: nfs-operator
+  template:
+    metadata:
+      labels:
+        name: nfs-operator
+    spec:
+      serviceAccountName: nfs-operator
+      containers:
+        - name: nfs-operator
+          # Replace this with the built image name
+          image: johandry/nfs-operator:1.0.2
+          command:
+          - nfs-operator
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "nfs-operator"

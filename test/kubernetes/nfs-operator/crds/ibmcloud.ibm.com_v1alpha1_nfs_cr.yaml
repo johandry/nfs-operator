@@ -1,0 +1,11 @@
+apiVersion: ibmcloud.ibm.com/v1alpha1
+kind: Nfs
+metadata:
+  name: example-nfs
+spec:
+  storageClass: some-class
+  provisionerAPI: some-provisioner-api
+  backingStorage:
+    pvcName: some-backing-storage-pvc-name
+    storageClass: some-backing-storage-class-name
+    storageSize: some-backing-storage-size
