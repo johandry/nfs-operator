@@ -1,7 +1,21 @@
 # Current Operator version
-VERSION ?= 0.0.1
+VERSION 			?= 0.0.1
+
+
+OPERATOR_NAME	?= nfs-operator
+REGISTRY 			?= johandry
+
+
 # Default bundle image tag
-BUNDLE_IMG ?= controller-bundle:$(VERSION)
+BUNDLE_IMG 		?= controller-bundle:$(VERSION)
+
+# Image URL to use all building/pushing image targets
+IMG 	 				 = $(REGISTRY)/$(OPERATOR_NAME):$(VERSION)
+MUTABLE_IMG 	 = $(REGISTRY)/$(OPERATOR_NAME):latest
+
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= "crd:trivialVersions=true"
+
 # Options for 'bundle-build'
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
@@ -10,11 +24,6 @@ ifneq ($(origin DEFAULT_CHANNEL), undefined)
 BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
-
-# Image URL to use all building/pushing image targets
-IMG ?= controller:latest
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -50,6 +59,10 @@ deploy: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
+# Deletes the controller from the Kubernetes cluster
+delete:
+	$(KUSTOMIZE) build config/default | kubectl delete -f -
+
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
@@ -66,6 +79,14 @@ vet:
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+# Release the docker image with the operator
+release: docker-build docker-push
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default > docs/install.yaml
+
+# release: docker-build docker-push manifests kustomize
+# 	$(KUSTOMIZE) build config/crd > docs/install.yaml
+
 # Build the docker image
 docker-build: test
 	docker build . -t ${IMG}
@@ -73,6 +94,11 @@ docker-build: test
 # Push the docker image
 docker-push:
 	docker push ${IMG}
+	docker tag  ${IMG} ${MUTABLE_IMG}
+	docker push ${MUTABLE_IMG}
+
+clean: delete uninstall
+
 
 # find or download controller-gen
 # download controller-gen if necessary
