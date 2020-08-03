@@ -132,6 +132,16 @@ else
 KUSTOMIZE=$(shell which kustomize)
 endif
 
+# Setup binaries required to run the tests
+# See that it expects the Kubernetes and ETCD version
+K8S_VERSION = v1.18.2
+ETCD_VERSION = v3.4.3
+testbin:
+	curl -sSLo setup_envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/kubebuilder/master/scripts/setup_envtest_bins.sh
+	chmod +x setup_envtest.sh
+	./setup_envtest.sh $(K8S_VERSION) $(ETCD_VERSION)
+	rm ./setup_envtest.sh
+
 # Generate bundle manifests and metadata, then validate generated files.
 bundle: manifests
 	operator-sdk generate kustomize manifests -q
@@ -141,3 +151,8 @@ bundle: manifests
 # Build the bundle image.
 bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+
+
+export TEST_ASSET_KUBECTL=./testbin/kubectl
+export TEST_ASSET_KUBE_APISERVER=./testbin/kube-apiserver
+export TEST_ASSET_ETCD=./testbin/etcd

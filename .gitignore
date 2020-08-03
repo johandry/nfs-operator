@@ -22,3 +22,12 @@ bin
 *.swp
 *.swo
 *~
+
+# Ignore the test binaries
+testbin/
+setup_envtest.sh
+default.etcd/
+
+# Ignore Bundle (for now)
+bundle.Dockerfile
+bundle/
