@@ -1,0 +1,52 @@
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-nfs-storage-ibmcloud-ibm-com-v1alpha1-nfs
+  failurePolicy: Fail
+  name: mnfs.kb.io
+  rules:
+  - apiGroups:
+    - nfs.storage.ibmcloud.ibm.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - nfs
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-nfs-storage-ibmcloud-ibm-com-v1alpha1-nfs
+  failurePolicy: Fail
+  name: vnfs.kb.io
+  rules:
+  - apiGroups:
+    - nfs.storage.ibmcloud.ibm.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - nfs

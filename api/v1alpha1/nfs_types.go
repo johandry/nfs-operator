@@ -25,7 +25,7 @@ import (
 
 // RequestSpec defines the specifications of the backing storage to request or create
 type RequestSpec struct {
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:MinLength=0
 
 	// Storage size to request
 	Storage string `json:"storage,omitempty"`
@@ -34,10 +34,8 @@ type RequestSpec struct {
 // BackingStorageSpec defines the desired state of the Backing Storage used to
 // export the NFS volume
 type BackingStorageSpec struct {
-	// +kubebuilder:default=false
-
 	// Defines if the backing storage is created (false) or will use an existing
-	// (true) PVC previously created by the user
+	// (true) PVC previously created by the user. Default is false
 	// +optional
 	UseExistingPVC bool `json:"useExistingPVC,omitempty"`
 
@@ -45,8 +43,6 @@ type BackingStorageSpec struct {
 
 	// Name of the PVC to create or use, if exists
 	Name string `json:"name,omitempty"`
-
-	// +kubebuilder:default=ibmc-vpc-block-general-purpose
 
 	// Storage class used to create the PVC. Defaults to ibmc-vpc-block-general-purpose
 	// +optional
@@ -61,13 +57,11 @@ type NfsSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// +kubebuilder:default=cluster-nfs
-	// The storageClass that the provisioner will listen for requests. defaults to cluster-nfs
+	// The storageClass that the provisioner will listen for requests. Defaults to cluster-nfs
 	// +optional
 	StorageClassName string `json:"storageClassName,omitempty"`
 
-	// +kubebuilder:default=cluster.example.com/nfs
-	// Defines the provisioner API. defaults to cluster.example.com/nfs
+	// Defines the provisioner API. Defaults to cluster.example.com/nfs
 	// +optional
 	ProvisionerAPI string `json:"provisionerAPI,omitempty"`
 
