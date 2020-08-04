@@ -37,30 +37,36 @@ spec:
           description: NfsSpec defines the desired state of Nfs
           properties:
             backingStorage:
-              description: BackingStorageSpec defines the desired state of the Backing
-                Storage
+              description: Specifications for the backing storage used to export the
+                NFS volume
               properties:
                 name:
+                  description: Name of the PVC to create or use, if exists
+                  minLength: 0
                   type: string
                 request:
-                  description: RequestSpec defines the specifications of the backing
-                    storage to request or create
+                  description: Specifications to request for the PVC to create
                   properties:
                     storage:
+                      description: Storage size to request
+                      minLength: 0
                       type: string
                   type: object
                 storageClassName:
-                  default: ibmc-vpc-block-general-purpose
+                  description: Storage class used to create the PVC. Defaults to ibmc-vpc-block-general-purpose
                   type: string
                 useExistingPVC:
-                  default: false
+                  description: Defines if the backing storage is created (false) or
+                    will use an existing (true) PVC previously created by the user.
+                    Default is false
                   type: boolean
               type: object
             provisionerAPI:
-              default: example.com/nfs
+              description: Defines the provisioner API. Defaults to cluster.example.com/nfs
               type: string
             storageClassName:
-              default: example-nfs
+              description: The storageClass that the provisioner will listen for requests.
+                Defaults to cluster-nfs
               type: string
           type: object
         status:

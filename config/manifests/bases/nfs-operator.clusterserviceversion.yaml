@@ -1,0 +1,45 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+    operators.operatorframework.io/builder: operator-sdk-v0.19.1
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+  name: nfs-operator.vX.Y.Z
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Nfs is the Schema for the nfs API
+      kind: Nfs
+      name: nfs.nfs.storage.ibmcloud.ibm.com
+      version: v1alpha1
+  description: Provide NFS volumes in the cluster
+  displayName: nfs-provisioner
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - nfs
+  links:
+  - name: Nfs Operator
+    url: https://nfs-operator.domain
+  maturity: alpha
+  provider:
+    name: nfs.storage.ibmcloud.ibm.com
+  version: 0.0.0

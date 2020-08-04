@@ -3,5 +3,10 @@ kind: Nfs
 metadata:
   name: nfs-sample
 spec:
-  # Add fields here
-  foo: bar
+  storageClassName: example-nfs
+  provisionerAPI: example.com/nfs
+  backingStorage:
+    name: export-nfs-block
+    storageClassName: ibmc-vpc-block-general-purpose
+    request:
+      storage: 10Gi
