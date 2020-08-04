@@ -20,11 +20,15 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	nfsstoragev1alpha1 "github.com/johandry/nfs-operator/api/v1alpha1"
+	"github.com/johandry/nfs-operator/resources"
+	vpcblockbackend "github.com/johandry/nfs-operator/resources/backends/vpc-block"
+	nfsprovisioner "github.com/johandry/nfs-operator/resources/provisioners/nfs"
 )
 
 // NfsReconciler reconciles a Nfs object
@@ -37,17 +41,61 @@ type NfsReconciler struct {
 // +kubebuilder:rbac:groups=nfs.storage.ibmcloud.ibm.com,resources=nfs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nfs.storage.ibmcloud.ibm.com,resources=nfs/status,verbs=get;update;patch
 
+// Reconcile ...
 func (r *NfsReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("nfs", req.NamespacedName)
+	ctx := context.Background()
+	log := r.Log.WithValues("nfs", req.NamespacedName)
 
-	// your logic here
+	log.Info("reconciling NFS")
+
+	nfs := &nfsstoragev1alpha1.Nfs{}
+	if err := r.Get(ctx, req.NamespacedName, nfs); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	resourcesToReconcile := []resources.Reconcilable{}
+	resourcesToReconcile = append(resourcesToReconcile, vpcblockbackend.Resources(nfs)...)
+	resourcesToReconcile = append(resourcesToReconcile, nfsprovisioner.Resources(nfs)...)
+
+	for _, res := range resourcesToReconcile {
+		if err := r.apply(ctx, res); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 
 	return ctrl.Result{}, nil
 }
 
+// SetupWithManager ...
 func (r *NfsReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nfsstoragev1alpha1.Nfs{}).
+		Owns(&storagev1.StorageClass{}).
 		Complete(r)
+}
+
+func (r *NfsReconciler) apply(ctx context.Context, res resources.Reconcilable) error {
+	current, err := res.Get(ctx, r.Client)
+	if err != nil {
+		r.Log.Error(err, "Fail to get the resource")
+		return err
+	}
+
+	obj := res.Object()
+
+	if err := res.SetControllerReference(r.Scheme); err != nil {
+		return err
+	}
+
+	if current != nil {
+		if ok := res.Validate(current); !ok {
+			r.Log.Info("Resource already exists but invalid, updating the resource to original state")
+			return r.Update(ctx, obj)
+		}
+		return nil
+	}
+
+	// create it if not found and no error
+	r.Log.Info("Resource created")
+	return r.Create(ctx, obj)
 }
