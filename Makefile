@@ -34,7 +34,9 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: manager
+default: manager
+
+all: manager install release deploy
 
 # Run tests
 test: generate fmt vet manifests

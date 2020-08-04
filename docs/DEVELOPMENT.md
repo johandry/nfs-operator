@@ -12,58 +12,105 @@
 
 ## QuickStart
 
-After [installing the Operator SDK](#install-the-operator-sdk) and [Bootstrapping the Operator](#bootstrap-the-operator) to create the API and the Controller, the development process might be just to modify them and the required resources in the `resources/` directory/package. Review the `Makefile` to update the `VERSION` and the `IMG` variable with the image name and registry to push it. The `Makefile` in this project add a few automation rules.
+1. [Create the test environment](#create-a-kubernetes-cluster-for-testing)
+2. [Install the Operator SDK](#install-the-operator-sdk).
+3. [Bootstrap the Operator](#bootstrap-the-operator) to create the API and the Controller.
+4. Modify on the API file `api/v1alpha1/nfs_types.go` and the Controller file `controllers/nfs_controller.go`
+5. Develop the controller modifing the files in the `resources` package
+6. (Optional) Update the `VERSION` or the `IMG` variable in the `Makefile`
+7. (Optional) Modify `config/samples/nfs.storage.ibmcloud.ibm.com_v1alpha1_nfs.yaml` or `config/samples/kustomization.yaml`.
+8. To **build**, **install**, **test**, **release** and **deploy** execute the following commands:
 
-After any modification on the API file `api/v1alpha1/nfs_types.go`, the Controller file `controllers/nfs_controller.go` or the resources in `resources/*`, update - optionally - the `VERSION` variable in the `Makefile` and execute `make` to **build** the operator manager (to make sure it compile and builds successfully), then **install** the CRD into the cluster defined in `~/.kube/config` (execute `kubectl cluster-info` to confirm). Like this:
+   ```bash
+   make
+   make install
 
-```bash
-make
-make install
-```
+   # Test Locally: recomended to run this in a different terminal
+   make run
 
-To **test** the operator you may want to leave the logs output running in the background, open a new terminal to execute:
+   # Test on the IKS Testing Cluster:
+   make release
+   make deploy
 
-```bash
-make run
-```
+   kubectl get deployments --namespace nfs-operator-system nfs-operator-controller-manager
+   kubectl get pods --namespace nfs-operator-system
+   kubectl get nfs -A
+   ```
 
-When the operator is ready, **release** it executing `make release` to build and push the Docker image to the Docker registry defined in the `Makefile`. Then you are ready to deploy the NFS Custom Resource.
+   The `make deploy` install the built CRD but the users can install the CRD executing:
 
-To do the **deployment** of the NFS Custom Resource (CR) modify the CR file `config/samples/nfs.storage.ibmcloud.ibm.com_v1alpha1_nfs.yaml` and - optionally - the `kustomization.yaml` in the same directory. Then execute `make deploy`.
+   ```bash
+   kubectl create -f https://www.johandry.com/nfs-operator/install.yaml
+   ```
 
-```bash
-make release
-make deploy
+9. To **use** the NFS Provisioner executing the following commands. To **debug** the NFS Operator make sure `make run` is running in other terminal.
 
-kubectl get deployment nfs-operator
-kubectl get pods
-kubectl get nfs
-```
+   ```bash
+   # Create the NFS CR
+   kustomize build config/samples | kubectl -f - apply
+   ## Or:
+   kubectl apply -f <(echo "
+    apiVersion: nfs.storage.ibmcloud.ibm.com/v1alpha1
+    kind: Nfs
+    metadata:
+      name: cluster-nfs
+    spec:
+      storageClassName: cluster-nfs
+      provisionerAPI: example.com/nfs
+      backingStorage:
+        name: export-nfs-block
+        storageClassName: ibmc-vpc-block-general-purpose
+        request:
+          storage: 10Gi
+   ")
+   kubectl get nfs -A
 
-The **release** of the NFS Custom Resource is done committing and pushing the changes to the GitHub repository. Then the users can install the NFS CR executing:
+   # Create a PVC and the application (pod or deployment) that uses the NFS CR
+   kubectl apply -f <(echo "
+    kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: nfs
+    spec:
+      storageClassName: cluster-nfs
+      accessModes:
+        - ReadWriteMany
+      resources:
+        requests:
+          storage: 1Mi
+   ")
 
-```bash
-kubectl create -f https://www.johandry.com/nfs-operator/install.yaml
+   kubectl apply -f <(echo "
+    kind: Pod
+    apiVersion: v1
+    metadata:
+      name: consumer
+    spec:
+      containers:
+        - name: consumer
+          image: busybox
+          command:
+            - "/bin/sh"
+          args:
+            - "-c"
+            - "touch /mnt/SUCCESS && exit 0 || exit 1"
+          volumeMounts:
+            - name: nfs-pvc
+              mountPath: "/mnt"
+      restartPolicy: "Never"
+      volumes:
+        - name: nfs-pvc
+          persistentVolumeClaim:
+            claimName: nfs
+   ")
 
-kubectl get deployment nfs-operator
-kubectl get pods
-kubectl get nfs
-```
+   kubectl get deployment
+   kubectl get pods
+   kubectl get nfs
+   ```
 
-To test the NFS CR, modify the file `config/samples/nfs.storage.ibmcloud.ibm.com_v1alpha1_nfs.yaml` or the `kustomization.yaml` in the same directory, deploy the CR and check the output of the operator with `make run`
-
-```bash
-make deploy
-make run
-```
-
-Go to [USAGE](./USAGE.md) to learn how to use the NFS Custom Resource.
-
-To **delete** the deployed NFS CR, execute `make delete`. To **uninstall** the installed CRD execute `make uninstall`. To remove everything, execute:
-
-```bash
-make clean
-```
+10. Delete the installed Custom Resource with `make delete`, uninstall the CRD with `make uninstall`, or everything with `make clean`
+11. Destroy the test environment with: `cd test; make clean`
 
 ## Install the Operator SDK
 
@@ -72,6 +119,8 @@ At this time the latest version of the OperatorSDK is `v0.19.0`. This new versio
 ```bash
 brew install operator-sdk
 ```
+
+To execute Unit Test the Kubernetes server binaries `etcd`, `kube-apiserver` and `kubectl` are required. Execute `make testbin` to install them into the `./testbin/` directory.
 
 ## Bootstrap the Operator
 
@@ -96,6 +145,8 @@ git add .
 git commit -m "project bootstrap"
 
 operator-sdk create api --group="nfs.storage" --version="v1alpha1" --kind="Nfs" --controller --resource
+
+operator-sdk create webhook --group nfs.storage --version v1alpha1 --kind Nfs --defaulting --programmatic-validation
 ```
 
 Open the file `api/v1alpha1/nfs_types.go` to edit the struct `NfsSpec` and, optionally, the `NfsStatus`.
@@ -153,6 +204,10 @@ type NfsStatus struct {
 ```
 
 Execute `make` every time the `*_types.go` file is modified.
+
+Edit the `api/v1alpha1/nfs_webhook.go` to include the validations and defaults values in the functions `Default`, `ValidateCreate` and `ValidateUpdate` functions.
+
+To enable WebHook locally it's required to generate the certificates at `/tmp/k8s-webhook-server/serving-certs/tls.{crt,key}`, that's why WebHook is disabled by default when `make run` is executed. To enable it generate the certificates and execute `make run ENABLE_WEBHOOKS=true`
 
 Open the `controllers/nfs_controller.go` file to edit the content of the `Reconcile` function.
 

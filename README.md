@@ -4,9 +4,9 @@
   - [Usage](#usage)
   - [Build](#build)
   - [Testing](#testing)
-    - [Cleanup](#cleanup)
+  - [Cleanup](#cleanup)
 
-The NFS Provisioner Operator creates a **NFS External Provisioner** which creates a `ReadWriteMany` `PersistentVolumeClaim` to be consumed by any Pod/Container in the cluster. The backend block storage, if not specified, is an IBM Cloud VPC Block using the requested storage class.
+The NFS Provisioner Operator creates a **NFS External Provisioner** which creates a `ReadWriteMany` `PersistentVolumeClaim` to be consumed by any Pod/Container in the cluster. The backend block storage to be exposed by NFS, could be previously created and specified, or could be created by the operator. At this time, this backend block storage is an IBM Cloud VPC Block.
 
 The goal of this NFS Provisioner Operator is to make it easier to Kubernetes developers to have a PVC that can be used by many pods (`ReadWriteMany`) using the same volume, saving resources and money.
 
@@ -17,10 +17,10 @@ Refer to the [documentation](./docs/index.md) for more information about the des
 Before use it you need to deploy the NFS Provisioner Operator, this is usually done, but not necessarily, when the cluster is created. The deployment can be done with the following `kubectl` command:
 
 ```bash
-kubectl create -f https://www.johandry.com/nfs-operator/nfs_provisioner.yaml
+kubectl create -f https://www.johandry.com/nfs-operator/install.yaml
 ```
 
-The first step after the NFS Provisioner Operator is deployed is to create a NFS CustomResource defining the `storageClassName` and define the backing block storage. The backend block storage will be created by the operator or you can provide an existing storage accessible through a PVC.
+The first step after the NFS Provisioner Operator is deployed is to create a **NFS CustomResource** defining the `storageClassName` and the backing block storage. The backend block storage is created by the operator or you can provide an existing storage accessible through a PVC.
 
 An example of a regular NFS CustomResource could be like this.
 
@@ -148,7 +148,7 @@ make test
 
 To know the status of the resources created by the NFS Operator or the NFS Provisioner, execute `make list` and to know all the resources in the cluster, either created by the code or external, execute `make list-all`.
 
-### Cleanup
+## Cleanup
 
 To delete the CR and CRD execute:
 
