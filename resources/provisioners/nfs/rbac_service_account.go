@@ -73,7 +73,7 @@ func (r *ServiceAccount) Get(ctx context.Context, c client.Client) (runtime.Obje
 	found := &corev1.ServiceAccount{}
 	obj := r.new()
 
-	err := c.Get(ctx, types.NamespacedName{Name: obj.Name /*, Namespace: obj.Namespace */}, found)
+	err := c.Get(ctx, types.NamespacedName{Name: obj.Name, Namespace: obj.Namespace}, found)
 	if err == nil {
 		return found, nil
 	}

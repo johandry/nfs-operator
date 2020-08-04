@@ -92,6 +92,7 @@ func (r *NfsReconciler) apply(ctx context.Context, res resources.Reconcilable) e
 			r.Log.Info("Resource already exists but invalid, updating the resource to original state")
 			return r.Update(ctx, obj)
 		}
+		r.Log.Info("Skip reconcile: Resource already exists")
 		return nil
 	}
 

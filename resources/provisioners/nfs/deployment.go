@@ -282,7 +282,7 @@ func (r *Deployment) Get(ctx context.Context, c client.Client) (runtime.Object, 
 	found := &appsv1.Deployment{}
 	obj := r.new()
 
-	err := c.Get(ctx, types.NamespacedName{Name: obj.Name /*, Namespace: obj.Namespace */}, found)
+	err := c.Get(ctx, types.NamespacedName{Name: obj.Name, Namespace: obj.Namespace}, found)
 	if err == nil {
 		return found, nil
 	}
