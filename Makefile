@@ -1,10 +1,8 @@
 # Current Operator version
 VERSION 			?= 0.0.1
 
-
 OPERATOR_NAME	?= nfs-operator
 REGISTRY 			?= johandry
-
 
 # Default bundle image tag
 BUNDLE_IMG 		?= controller-bundle:$(VERSION)
@@ -12,6 +10,10 @@ BUNDLE_IMG 		?= controller-bundle:$(VERSION)
 # Image URL to use all building/pushing image targets
 IMG 	 				 = $(REGISTRY)/$(OPERATOR_NAME):$(VERSION)
 MUTABLE_IMG 	 = $(REGISTRY)/$(OPERATOR_NAME):latest
+
+# Disable WebHooks by default. To enable WebHooks generate the certificates at
+# /tmp/k8s-webhook-server/serving-certs/tls.{crt,key}
+ENABLE_WEBHOOKS	?= false
 
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
@@ -44,7 +46,7 @@ manager: generate fmt vet
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
-	go run ./main.go
+	ENABLE_WEBHOOKS=$(ENABLE_WEBHOOKS) go run ./main.go
 
 # Install CRDs into a cluster
 install: manifests kustomize
