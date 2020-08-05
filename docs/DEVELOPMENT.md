@@ -16,7 +16,7 @@
 2. [Install the Operator SDK](#install-the-operator-sdk).
 3. [Bootstrap the Operator](#bootstrap-the-operator) to create the API and the Controller.
 4. Modify on the API file `api/v1alpha1/nfs_types.go` and the Controller file `controllers/nfs_controller.go`
-5. Develop the controller modifing the files in the `resources` package
+5. Develop the controller modifying the files in the `resources` package
 6. (Optional) Update the `VERSION` or the `IMG` variable in the `Makefile`
 7. (Optional) Modify `config/samples/nfs.storage.ibmcloud.ibm.com_v1alpha1_nfs.yaml` or `config/samples/kustomization.yaml`.
 8. To **build**, **install**, **test**, **release** and **deploy** execute the following commands:
@@ -25,7 +25,7 @@
    make
    make install
 
-   # Test Locally: recomended to run this in a different terminal
+   # Test Locally: recommended to run this in a different terminal
    make run
 
    # Test on the IKS Testing Cluster:
@@ -114,7 +114,7 @@
 
 ## Install the Operator SDK
 
-At this time the latest version of the OperatorSDK is `v0.19.0`. This new version is aligned with **Kubebuilder** which is a big change from previous versions.
+At this time the latest version of the OperatorSDK is `v0.19.2`. This new version is aligned with **Kubebuilder** which is a big change from previous versions.
 
 ```bash
 brew install operator-sdk
