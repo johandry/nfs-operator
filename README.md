@@ -17,7 +17,7 @@ Refer to the [documentation](./docs/index.md) for more information about the des
 Before use it you need to deploy the NFS Provisioner Operator, this is usually done, but not necessarily, when the cluster is created. The deployment can be done with the following `kubectl` command:
 
 ```bash
-kubectl create -f https://www.johandry.com/nfs-operator/install.yaml
+kubectl create -f https://www.johandry.com/nfs-operator/nfs_provisioner_operator_install.yaml
 ```
 
 The first step after the NFS Provisioner Operator is deployed is to create a **NFS CustomResource** defining the `storageClassName` and the backing block storage. The backend block storage is created by the operator or you can provide an existing storage accessible through a PVC.

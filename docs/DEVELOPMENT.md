@@ -40,7 +40,7 @@
    The `make deploy` install the built CRD but the users can install the CRD executing:
 
    ```bash
-   kubectl create -f https://www.johandry.com/nfs-operator/install.yaml
+   kubectl create -f https://www.johandry.com/nfs-operator/nfs_provisioner_operator_install.yaml
    ```
 
 9. To **use** the NFS Provisioner executing the following commands. To **debug** the NFS Operator make sure `make run` is running in other terminal.

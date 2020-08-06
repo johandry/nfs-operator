@@ -25,7 +25,7 @@ The NFS Provisioner Operator allows you to have a volume available to many Pods 
 Before use the NFS **Custom Resource** (CR) to request a NFS storage for your containers you need to deploy the **Operator** and the **Custom Resource Definition** (CRD). The easiest way to do so is executing the following `kubectl` command:
 
 ```bash
-kubectl create -f https://www.johandry.com/nfs-operator/nfs_provisioner.yaml
+kubectl create -f https://www.johandry.com/nfs-operator/nfs_provisioner_operator_install.yaml
 ```
 
 Other way to deploy it, specially if you are developing the NFS Provisioner Operator or using the repository, is to deploy the files located in the `deploy/` directory and the `deploy/crds/*_crd.yaml` file with the CRD. Or, just execute the following `make` command.
