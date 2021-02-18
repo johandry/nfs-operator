@@ -22,7 +22,14 @@ The NFS Provisioner Operator allows you to have a volume available to many Pods 
 
 ## Deployments
 
-Before use the NFS **Custom Resource** (CR) to request a NFS storage for your containers you need to deploy the **Operator** and the **Custom Resource Definition** (CRD). The easiest way to do so is executing the following `kubectl` command:
+Before use the NFS **Custom Resource** (CR) to request a NFS storage for your containers you need to deploy the **Operator** and the **Custom Resource Definition** (CRD). Also, if it's not already installed, the operator webhooks needs the [Certificate Manager](https://github.com/jetstack/cert-manager), to install it follow the [instructions](https://cert-manager.io/docs/installation/kubernetes/) which are basically to install the latest release of the CertManager, like so:
+
+```bash
+# Assuming latest version is v0.16.0:
+kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.16.0/cert-manager.yaml
+```
+
+The easiest way to install the NFS Operator is executing the following `kubectl` command:
 
 ```bash
 kubectl create -f https://www.johandry.com/nfs-operator/nfs_provisioner_operator_install.yaml
