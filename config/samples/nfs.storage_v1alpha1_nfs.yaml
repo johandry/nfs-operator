@@ -3,7 +3,7 @@ kind: Nfs
 metadata:
   name: nfs-sample
 spec:
-  storageClassName: example-nfs
+  storageClassName: cluster-nfs
   provisionerAPI: example.com/nfs
   backingStorage:
     name: export-nfs-block

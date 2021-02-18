@@ -18,9 +18,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
-	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,6 +29,8 @@ import (
 	"github.com/johandry/nfs-operator/resources"
 	vpcblockbackend "github.com/johandry/nfs-operator/resources/backends/vpc-block"
 	nfsprovisioner "github.com/johandry/nfs-operator/resources/provisioners/nfs"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // NfsReconciler reconciles a Nfs object
@@ -50,8 +52,10 @@ func (r *NfsReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	nfs := &nfsstoragev1alpha1.Nfs{}
 	if err := r.Get(ctx, req.NamespacedName, nfs); err != nil {
+		log.Info("NFS not found")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	log.Info(fmt.Sprintf("Found NFS %s/%s", nfs.Namespace, nfs.Name))
 
 	resourcesToReconcile := []resources.Reconcilable{}
 	resourcesToReconcile = append(resourcesToReconcile, vpcblockbackend.Resources(nfs)...)
@@ -70,7 +74,17 @@ func (r *NfsReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 func (r *NfsReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nfsstoragev1alpha1.Nfs{}).
-		Owns(&storagev1.StorageClass{}).
+		// Backend Storage: VPC Block
+		// Owns(&corev1.PersistentVolumeClaim{}).
+		// NFS Provisioner: Deployment
+		Owns(&corev1.Service{}).
+		Owns(&appsv1.Deployment{}).
+		// NFS Provisioner: RBAC
+		// Owns(&corev1.ServiceAccount{}).
+		// Owns(&rbacv1.Role{}).
+		// Owns(&rbacv1.RoleBinding{}).
+		// NFS Provisioner: StorageClass (non namespaced)
+		// Owns(&storagev1.StorageClass{}).
 		Complete(r)
 }
 

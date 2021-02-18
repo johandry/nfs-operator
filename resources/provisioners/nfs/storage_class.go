@@ -35,8 +35,8 @@ mountOptions:
 func (r *StorageClass) new() *storagev1.StorageClass {
 	return &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      storageClassName,
-			Namespace: r.Owner.Namespace,
+			Name: storageClassName,
+			// Namespace: r.Owner.Namespace,
 		},
 		Provisioner: provisionerName,
 		MountOptions: []string{

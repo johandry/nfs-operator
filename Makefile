@@ -1,3 +1,5 @@
+SHELL				= /bin/bash
+
 # Current Operator version
 VERSION 			?= 0.0.1
 
@@ -17,6 +19,16 @@ ENABLE_WEBHOOKS	?= false
 
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
+
+ECHO 				= echo -e
+C_STD 			= $(shell echo -e "\033[0m")
+C_RED				= $(shell echo -e "\033[91m")
+C_GREEN 		= $(shell echo -e "\033[92m")
+P 			 		= $(shell echo -e "\033[92m> \033[0m")
+OK 			 		= $(shell echo -e "\033[92m[ OK  ]\033[0m")
+ERROR		 		= $(shell echo -e "\033[91m[ERROR] \033[0m")
+PASS		 		= $(shell echo -e "\033[92m[PASS ]\033[0m")
+FAIL		 		= $(shell echo -e "\033[91m[FAIL ] \033[0m")
 
 # Options for 'bundle-build'
 ifneq ($(origin CHANNELS), undefined)
@@ -86,7 +98,7 @@ generate: controller-gen
 # Release the docker image with the operator
 release: docker-build docker-push
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default > docs/install.yaml
+	$(KUSTOMIZE) build config/default > nfs_provisioner_operator_install.yaml
 
 # release: docker-build docker-push manifests kustomize
 # 	$(KUSTOMIZE) build config/crd > docs/install.yaml
@@ -136,6 +148,10 @@ else
 KUSTOMIZE=$(shell which kustomize)
 endif
 
+# export TEST_ASSET_KUBECTL=./testbin/kubectl
+# export TEST_ASSET_KUBE_APISERVER=./testbin/kube-apiserver
+# export TEST_ASSET_ETCD=./testbin/etcd
+
 # Setup binaries required to run the tests
 # See that it expects the Kubernetes and ETCD version
 K8S_VERSION = v1.18.2
@@ -156,7 +172,51 @@ bundle: manifests
 bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
+test-environment:
+	$(MAKE) -C test/terraform all
 
-export TEST_ASSET_KUBECTL=./testbin/kubectl
-export TEST_ASSET_KUBE_APISERVER=./testbin/kube-apiserver
-export TEST_ASSET_ETCD=./testbin/etcd
+deploy-nfs:
+	$(KUSTOMIZE) build config/samples | kubectl apply -f -
+
+deploy-consumer:
+	kubectl apply -f test/kubernetes/consumer/movies.yaml
+
+deploy-test: deploy-nfs deploy-consumer
+
+delete-test:
+	kubectl delete -f test/kubernetes/consumer/movies.yaml
+	$(KUSTOMIZE) build config/samples | kubectl delete -f -
+
+list-nfs:
+	@$(ECHO) "$(P)$(C_GREEN) NFS:$(C_STD)"; kubectl get nfs.nfs.storage.ibmcloud.ibm.com/nfs-sample
+
+list-consumer:
+	@$(ECHO) "$(P)$(C_GREEN) Consumer Namespace:$(C_STD)"; kubectl get namespace/nfs-consumer-app
+	@$(ECHO) "$(P)$(C_GREEN) Consumer PVC:$(C_STD)"; kubectl get persistentvolumeclaim/nfs-consumer-movies --namespace nfs-consumer-app
+	@$(ECHO) "$(P)$(C_GREEN) Consumer Service:$(C_STD)"; kubectl get service/nfs-consumer-movies --namespace nfs-consumer-app
+	@$(ECHO) "$(P)$(C_GREEN) Consumer ConfigMap:$(C_STD)"; kubectl get configmap/nfs-consumer-movies-db --namespace nfs-consumer-app
+	@$(ECHO) "$(P)$(C_GREEN) Consumer Deployment:$(C_STD)"; kubectl get deployment.apps/nfs-consumer-movies --namespace nfs-consumer-app
+	@$(ECHO) "$(P)$(C_GREEN) Consumer Pods:$(C_STD)"; kubectl get pods --namespace nfs-consumer-app
+
+list-test: list-nfs list-consumer
+
+list-operator:
+	@$(ECHO) "$(P)$(C_GREEN) Namespace:$(C_STD)"; kubectl get namespace/nfs-operator-system
+	@$(ECHO) "$(P)$(C_GREEN) CRD:$(C_STD)"; kubectl get customresourcedefinition.apiextensions.k8s.io/nfs.nfs.storage.ibmcloud.ibm.com --namespace nfs-operator-system
+	@$(ECHO) "$(P)$(C_GREEN) RBAC:$(C_STD)"; \
+		kubectl get role.rbac.authorization.k8s.io/nfs-operator-leader-election-role --namespace nfs-operator-system; \
+		kubectl get clusterrole.rbac.authorization.k8s.io/nfs-operator-manager-role --namespace nfs-operator-system; \
+		kubectl get clusterrole.rbac.authorization.k8s.io/nfs-operator-proxy-role --namespace nfs-operator-system; \
+		kubectl get clusterrole.rbac.authorization.k8s.io/nfs-operator-metrics-reader --namespace nfs-operator-system; \
+		kubectl get rolebinding.rbac.authorization.k8s.io/nfs-operator-leader-election-rolebinding --namespace nfs-operator-system; \
+		kubectl get clusterrolebinding.rbac.authorization.k8s.io/nfs-operator-manager-rolebinding --namespace nfs-operator-system; \
+		kubectl get clusterrolebinding.rbac.authorization.k8s.io/nfs-operator-proxy-rolebinding --namespace nfs-operator-system
+	@$(ECHO) "$(P)$(C_GREEN) Cert-Manager & WebHook:$(C_STD)"; \
+		kubectl get mutatingwebhookconfiguration.admissionregistration.k8s.io/nfs-operator-mutating-webhook-configuration --namespace nfs-operator-system; \
+		kubectl get service/nfs-operator-webhook-service --namespace nfs-operator-system; \
+		kubectl get certificate.cert-manager.io/nfs-operator-serving-cert --namespace nfs-operator-system; \
+		kubectl get issuer.cert-manager.io/nfs-operator-selfsigned-issuer --namespace nfs-operator-system; \
+		kubectl get validatingwebhookconfiguration.admissionregistration.k8s.io/nfs-operator-validating-webhook-configuration
+	@$(ECHO) "$(P)$(C_GREEN) Service:$(C_STD)"; kubectl get service/nfs-operator-controller-manager-metrics-service --namespace nfs-operator-system
+	@$(ECHO) "$(P)$(C_GREEN) Deployment:$(C_STD)"; kubectl get deployment.apps/nfs-operator-controller-manager --namespace nfs-operator-system
+	@$(ECHO) "$(P)$(C_GREEN) Pods:$(C_STD)"; kubectl get pod --namespace nfs-operator-system
