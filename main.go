@@ -33,8 +33,6 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-const disable_webhook = true
-
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -78,7 +76,11 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Nfs")
 		os.Exit(1)
 	}
-	if disable_webhook || (os.Getenv("ENABLE_WEBHOOKS") != "false") {
+
+	// Force to disable the WebHooks
+	// os.Setenv("ENABLE_WEBHOOKS", "false")
+
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&nfsstoragev1alpha1.Nfs{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Nfs")
 			os.Exit(1)

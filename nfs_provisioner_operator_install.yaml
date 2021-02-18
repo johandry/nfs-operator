@@ -97,6 +97,33 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: nfs-operator-system/nfs-operator-serving-cert
+  creationTimestamp: null
+  name: nfs-operator-mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: nfs-operator-webhook-service
+      namespace: nfs-operator-system
+      path: /mutate-nfs-storage-ibmcloud-ibm-com-v1alpha1-nfs
+  failurePolicy: Fail
+  name: mnfs.kb.io
+  rules:
+  - apiGroups:
+    - nfs.storage.ibmcloud.ibm.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - nfs
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -241,6 +268,18 @@ spec:
   selector:
     control-plane: controller-manager
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nfs-operator-webhook-service
+  namespace: nfs-operator-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 9443
+  selector:
+    control-plane: controller-manager
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -276,6 +315,10 @@ spec:
         - /manager
         image: johandry/nfs-operator:0.0.1
         name: manager
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
         resources:
           limits:
             cpu: 100m
@@ -283,4 +326,62 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
       terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: webhook-server-cert
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: nfs-operator-serving-cert
+  namespace: nfs-operator-system
+spec:
+  dnsNames:
+  - nfs-operator-webhook-service.nfs-operator-system.svc
+  - nfs-operator-webhook-service.nfs-operator-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: nfs-operator-selfsigned-issuer
+  secretName: webhook-server-cert
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: nfs-operator-selfsigned-issuer
+  namespace: nfs-operator-system
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: nfs-operator-system/nfs-operator-serving-cert
+  creationTimestamp: null
+  name: nfs-operator-validating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: nfs-operator-webhook-service
+      namespace: nfs-operator-system
+      path: /validate-nfs-storage-ibmcloud-ibm-com-v1alpha1-nfs
+  failurePolicy: Fail
+  name: vnfs.kb.io
+  rules:
+  - apiGroups:
+    - nfs.storage.ibmcloud.ibm.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - nfs
